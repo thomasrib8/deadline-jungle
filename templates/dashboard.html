@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Dashboard</title>
+</head>
+<body>
+    <div class="container">
+        <h2>Dashboard</h2>
+        <h3>Prochaines Deadlines</h3>
+        <ul>
+            {% for deadline in deadlines %}
+                <li>{{ deadline[0] }} - {{ deadline[1] }} (Attribué à : {{ deadline[2] }})</li>
+            {% endfor %}
+        </ul>
+        <form action="/upload" method="POST" enctype="multipart/form-data">
+            <input type="file" name="file" required>
+            <button type="submit">Uploader .CSV</button>
+        </form>
+    </div>
+</body>
+</html>
