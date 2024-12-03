@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Priorités</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Priorités Quotidiennes</h1>
+        <p>Date : {{ today }}</p>
+        {% for person, tasks in priorities.items() %}
+        <div class="container">
+            <h3>{{ person }}</h3>
+            <ul class="task-list">
+                {% for task_id, title, end_date in tasks %}
+                <li class="task-item {% if end_date < today %}overdue{% endif %}">
+                    <span>{{ title }} (Deadline : {{ end_date }})</span>
+                    <form action="/update_status/{{ task_id }}" method="POST" style="display: inline;">
+                        <button type="submit" class="completed">Tâche terminée</button>
+                    </form>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
