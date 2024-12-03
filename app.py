@@ -2,6 +2,7 @@ import os
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 import sqlite3
 from werkzeug.utils import secure_filename
+from datetime import datetime
 
 # Initialisation de l'application Flask
 app = Flask(__name__)
@@ -80,3 +81,28 @@ if __name__ == '__main__':
     init_db()  # Initialisation de la base de données
     port = int(os.environ.get('PORT', 5000))  # Utilisation du port fourni par Render
     app.run(host='0.0.0.0', port=port, debug=True)
+
+@app.route('/priorities')
+def priorities():
+    conn = sqlite3.connect('tasks.db')
+    cursor = conn.cursor()
+    today = datetime.now().strftime('%Y-%m-%d')
+    
+    # Sélection des tâches urgentes pour chaque personne
+    cursor.execute('''
+        SELECT assigned_to, title, end_date, id
+        FROM tasks
+        WHERE status = "Pending" AND end_date >= ?
+        ORDER BY end_date ASC
+    ''', (today,))
+    tasks = cursor.fetchall()
+    conn.close()
+    
+    # Organisation des tâches par personne
+    priorities = {}
+    for assigned_to, title, end_date, task_id in tasks:
+        if assigned_to not in priorities:
+            priorities[assigned_to] = []
+        priorities[assigned_to].append((task_id, title, end_date))
+    
+    return render_template('priorities.html', priorities=priorities, today=today)
