@@ -1,8 +1,8 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, jsonify
 import sqlite3
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 from werkzeug.utils import secure_filename
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Initialisation de l'application Flask
 app = Flask(__name__)
@@ -76,12 +76,7 @@ def update_status(task_id):
     conn.close()
     return redirect(url_for('dashboard'))
 
-# Point d'entrée de l'application
-if __name__ == '__main__':
-    init_db()  # Initialisation de la base de données
-    port = int(os.environ.get('PORT', 5000))  # Utilisation du port fourni par Render
-    app.run(host='0.0.0.0', port=port, debug=True)
-
+# Route pour afficher les priorités quotidiennes
 @app.route('/priorities')
 def priorities():
     conn = sqlite3.connect('tasks.db')
@@ -107,6 +102,7 @@ def priorities():
     
     return render_template('priorities.html', priorities=priorities, today=today)
 
+# Route pour afficher le calendrier global
 @app.route('/calendar')
 def calendar():
     conn = sqlite3.connect('tasks.db')
@@ -125,3 +121,9 @@ def calendar():
     conn.close()
     
     return render_template('calendar.html', events=events)
+
+# Point d'entrée de l'application
+if __name__ == '__main__':
+    init_db()  # Initialisation de la base de données
+    port = int(os.environ.get('PORT', 5000))  # Utilisation du port fourni par Render
+    app.run(host='0.0.0.0', port=port, debug=True)
