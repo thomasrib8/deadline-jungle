@@ -1,9 +1,9 @@
+import os
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 import sqlite3
 from werkzeug.utils import secure_filename
-import os
-from datetime import datetime
 
+# Initialisation de l'application Flask
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = './uploads'
 app.config['SECRET_KEY'] = 'your_secret_key'
@@ -23,19 +23,22 @@ def init_db():
     conn.commit()
     conn.close()
 
+# Route pour la page de connexion
 @app.route('/')
 def login():
     return render_template('login.html')
 
+# Route pour afficher le tableau de bord
 @app.route('/dashboard')
 def dashboard():
     conn = sqlite3.connect('tasks.db')
     cursor = conn.cursor()
-    cursor.execute("SELECT title, end_date, assigned_to FROM tasks WHERE status='Pending' ORDER BY end_date ASC LIMIT 5")
+    cursor.execute("SELECT id, title, end_date, assigned_to FROM tasks WHERE status='Pending' ORDER BY end_date ASC LIMIT 5")
     deadlines = cursor.fetchall()
     conn.close()
     return render_template('dashboard.html', deadlines=deadlines)
 
+# Route pour uploader un fichier CSV
 @app.route('/upload', methods=['POST'])
 def upload():
     if 'file' not in request.files:
@@ -47,6 +50,7 @@ def upload():
     import_csv(file_path)
     return redirect(url_for('dashboard'))
 
+# Fonction pour importer les données d'un fichier CSV
 def import_csv(file_path):
     conn = sqlite3.connect('tasks.db')
     cursor = conn.cursor()
@@ -58,6 +62,7 @@ def import_csv(file_path):
     conn.commit()
     conn.close()
 
+# Route pour mettre à jour le statut d'une tâche
 @app.route('/update_status/<int:task_id>', methods=['POST'])
 def update_status(task_id):
     conn = sqlite3.connect('tasks.db')
@@ -67,6 +72,8 @@ def update_status(task_id):
     conn.close()
     return redirect(url_for('dashboard'))
 
+# Point d'entrée de l'application
 if __name__ == '__main__':
-    init_db()
-    app.run(debug=True)
+    init_db()  # Initialisation de la base de données
+    port = int(os.environ.get('PORT', 5000))  # Utilisation du port fourni par Render
+    app.run(host='0.0.0.0', port=port, debug=True)
