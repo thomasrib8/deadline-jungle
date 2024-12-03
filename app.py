@@ -106,3 +106,22 @@ def priorities():
         priorities[assigned_to].append((task_id, title, end_date))
     
     return render_template('priorities.html', priorities=priorities, today=today)
+
+@app.route('/calendar')
+def calendar():
+    conn = sqlite3.connect('tasks.db')
+    cursor = conn.cursor()
+    
+    # Sélection des tâches dans les 3 prochains mois
+    today = datetime.now()
+    future_date = (today.replace(day=1) + timedelta(days=90)).strftime('%Y-%m-%d')
+    cursor.execute('''
+        SELECT title, start_date, end_date, assigned_to
+        FROM tasks
+        WHERE end_date BETWEEN ? AND ?
+        ORDER BY end_date ASC
+    ''', (today.strftime('%Y-%m-%d'), future_date))
+    events = cursor.fetchall()
+    conn.close()
+    
+    return render_template('calendar.html', events=events)
