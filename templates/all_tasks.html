@@ -12,6 +12,9 @@
             <input type="text" name="new_assigned_to" placeholder="Attribuer à...">
             <button type="submit" class="general">Modifier</button>
         </form>
+        <form action="/delete_task/{{ task[0] }}" method="POST" style="display: inline;">
+            <button type="submit" class="completed">Terminée</button>
+        </form>
     </li>
     {% endfor %}
 </ul>
