@@ -104,3 +104,27 @@ table th {
     background-color: #f4f4f4;
 }
 
+/* Style pour le header */
+header {
+    background-color: #8ed3a2;
+    padding: 10px;
+    text-align: left;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+header button {
+    font-size: 16px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #000;
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+header button:hover {
+    background-color: #333;
+}
+
+
