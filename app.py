@@ -27,22 +27,64 @@ def init_db():
     conn.commit()
     conn.close()
 
-# Route pour la page de connexion
 @app.route('/')
 def login():
     return render_template('login.html')
 
-# Route pour afficher le tableau de bord
 @app.route('/dashboard')
 def dashboard():
     conn = sqlite3.connect('tasks.db')
     cursor = conn.cursor()
-    cursor.execute("SELECT id, title, end_date, assigned_to FROM tasks WHERE status='Pending' ORDER BY end_date ASC LIMIT 5")
-    deadlines = cursor.fetchall()
-    conn.close()
-    return render_template('dashboard.html', deadlines=deadlines)
 
-# Route pour uploader un fichier CSV
+    # Récupération des tâches urgentes pour le panneau des priorités
+    today = datetime.now().strftime('%Y-%m-%d')
+    cursor.execute('''
+        SELECT assigned_to, title, end_date, id
+        FROM tasks
+        WHERE status = "Pending" AND end_date >= ?
+        ORDER BY end_date ASC
+    ''', (today,))
+    tasks = cursor.fetchall()
+
+    # Organisation des tâches par personne
+    priorities = {}
+    for assigned_to, title, end_date, task_id in tasks:
+        if assigned_to not in priorities:
+            priorities[assigned_to] = []
+        priorities[assigned_to].append((task_id, title, end_date))
+
+    # Récupération des événements du mois prochain pour le calendrier
+    next_month_start = (datetime.now().replace(day=1) + timedelta(days=31)).strftime('%Y-%m-%d')
+    next_month_end = (datetime.now().replace(day=1) + timedelta(days=61)).strftime('%Y-%m-%d')
+    cursor.execute('''
+        SELECT title, start_date, end_date, assigned_to
+        FROM tasks
+        WHERE end_date BETWEEN ? AND ?
+        ORDER BY end_date ASC
+    ''', (next_month_start, next_month_end))
+    next_month_events = cursor.fetchall()
+
+    conn.close()
+    return render_template('dashboard.html', priorities=priorities, today=today, next_month_events=next_month_events)
+
+@app.route('/add_tasks')
+def add_tasks():
+    return render_template('add_tasks.html')
+
+@app.route('/add_task', methods=['POST'])
+def add_task():
+    title = request.form['title']
+    start_date = request.form['start_date']
+    end_date = request.form['end_date']
+    assigned_to = request.form['assigned_to']
+    conn = sqlite3.connect('tasks.db')
+    cursor = conn.cursor()
+    cursor.execute('INSERT INTO tasks (title, start_date, end_date, assigned_to) VALUES (?, ?, ?, ?)', 
+                   (title, start_date, end_date, assigned_to))
+    conn.commit()
+    conn.close()
+    return redirect('/dashboard')
+
 @app.route('/upload', methods=['POST'])
 def upload():
     if 'file' not in request.files:
@@ -52,13 +94,12 @@ def upload():
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(file_path)
     import_csv(file_path)
-    return redirect(url_for('dashboard'))
+    return redirect('/dashboard')
 
-# Fonction pour importer les données d'un fichier CSV
 def import_csv(file_path):
     conn = sqlite3.connect('tasks.db')
     cursor = conn.cursor()
-    with open(file_path, 'r') as file:
+    with open(file_path, 'r', encoding='utf-8') as file:
         for line in file.readlines()[1:]:
             title, start_date, end_date, assigned_to = line.strip().split(',')
             cursor.execute('INSERT INTO tasks (title, start_date, end_date, assigned_to) VALUES (?, ?, ?, ?)', 
@@ -66,64 +107,42 @@ def import_csv(file_path):
     conn.commit()
     conn.close()
 
-# Route pour mettre à jour le statut d'une tâche
-@app.route('/update_status/<int:task_id>', methods=['POST'])
-def update_status(task_id):
+@app.route('/all_tasks')
+def all_tasks():
     conn = sqlite3.connect('tasks.db')
     cursor = conn.cursor()
-    cursor.execute('UPDATE tasks SET status="Completed" WHERE id=?', (task_id,))
-    conn.commit()
-    conn.close()
-    return redirect(url_for('dashboard'))
-
-# Route pour afficher les priorités quotidiennes
-@app.route('/priorities')
-def priorities():
-    conn = sqlite3.connect('tasks.db')
-    cursor = conn.cursor()
-    today = datetime.now().strftime('%Y-%m-%d')
-    
-    # Sélection des tâches urgentes pour chaque personne
-    cursor.execute('''
-        SELECT assigned_to, title, end_date, id
-        FROM tasks
-        WHERE status = "Pending" AND end_date >= ?
-        ORDER BY end_date ASC
-    ''', (today,))
+    cursor.execute('SELECT id, title, end_date, assigned_to FROM tasks ORDER BY end_date ASC')
     tasks = cursor.fetchall()
     conn.close()
-    
-    # Organisation des tâches par personne
-    priorities = {}
-    for assigned_to, title, end_date, task_id in tasks:
-        if assigned_to not in priorities:
-            priorities[assigned_to] = []
-        priorities[assigned_to].append((task_id, title, end_date))
-    
-    return render_template('priorities.html', priorities=priorities, today=today)
+    return render_template('all_tasks.html', tasks=tasks)
 
-# Route pour afficher le calendrier global
+@app.route('/update_assigned/<int:task_id>', methods=['POST'])
+def update_assigned(task_id):
+    new_assigned_to = request.form['new_assigned_to']
+    conn = sqlite3.connect('tasks.db')
+    cursor = conn.cursor()
+    cursor.execute('UPDATE tasks SET assigned_to=? WHERE id=?', (new_assigned_to, task_id))
+    conn.commit()
+    conn.close()
+    return redirect('/all_tasks')
+
 @app.route('/calendar')
 def calendar():
     conn = sqlite3.connect('tasks.db')
     cursor = conn.cursor()
-    
-    # Sélection des tâches dans les 3 prochains mois
-    today = datetime.now()
-    future_date = (today.replace(day=1) + timedelta(days=90)).strftime('%Y-%m-%d')
+    today = datetime.now().strftime('%Y-%m-%d')
+    future_date = (datetime.now() + timedelta(days=90)).strftime('%Y-%m-%d')
     cursor.execute('''
         SELECT title, start_date, end_date, assigned_to
         FROM tasks
         WHERE end_date BETWEEN ? AND ?
         ORDER BY end_date ASC
-    ''', (today.strftime('%Y-%m-%d'), future_date))
+    ''', (today, future_date))
     events = cursor.fetchall()
     conn.close()
-    
     return render_template('calendar.html', events=events)
 
-# Point d'entrée de l'application
 if __name__ == '__main__':
-    init_db()  # Initialisation de la base de données
-    port = int(os.environ.get('PORT', 5000))  # Utilisation du port fourni par Render
+    init_db()
+    port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
