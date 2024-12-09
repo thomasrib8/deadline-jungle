@@ -45,15 +45,19 @@ def dashboard():
         ORDER BY end_date ASC
     ''', (today,))
     tasks = cursor.fetchall()
+    conn.close()
 
-    # Organisation des tâches par personne
+    # Organisation des tâches par personne et limitation à 3 tâches par personne
     priorities = {}
     for assigned_to, title, end_date, task_id in tasks:
         if assigned_to not in priorities:
             priorities[assigned_to] = []
-        priorities[assigned_to].append((task_id, title, end_date))
+        if len(priorities[assigned_to]) < 3:  # Limite à 3 tâches par personne
+            priorities[assigned_to].append((task_id, title, end_date))
 
     # Récupération des événements du mois prochain pour le calendrier
+    conn = sqlite3.connect('tasks.db')
+    cursor = conn.cursor()
     next_month_start = (datetime.now().replace(day=1) + timedelta(days=31)).strftime('%Y-%m-%d')
     next_month_end = (datetime.now().replace(day=1) + timedelta(days=61)).strftime('%Y-%m-%d')
     cursor.execute('''
@@ -63,8 +67,8 @@ def dashboard():
         ORDER BY end_date ASC
     ''', (next_month_start, next_month_end))
     next_month_events = cursor.fetchall()
-
     conn.close()
+
     return render_template('dashboard.html', priorities=priorities, today=today, next_month_events=next_month_events)
 
 @app.route('/add_tasks')
@@ -122,6 +126,15 @@ def update_assigned(task_id):
     conn = sqlite3.connect('tasks.db')
     cursor = conn.cursor()
     cursor.execute('UPDATE tasks SET assigned_to=? WHERE id=?', (new_assigned_to, task_id))
+    conn.commit()
+    conn.close()
+    return redirect('/all_tasks')
+
+@app.route('/delete_task/<int:task_id>', methods=['POST'])
+def delete_task(task_id):
+    conn = sqlite3.connect('tasks.db')
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM tasks WHERE id = ?', (task_id,))
     conn.commit()
     conn.close()
     return redirect('/all_tasks')
