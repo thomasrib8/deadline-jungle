@@ -1,51 +1,38 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <title>Dashboard</title>
-</head>
-<body>
-    <header>
-        <button onclick="location.href='/'" class="general">Retour au Dashboard</button>
-    </header>
-    <div class="container">
-        <h1>Dashboard</h1>
-        
-        <!-- Boutons d'actions -->
-        <div class="action-buttons">
-            <button onclick="location.href='/add_tasks'" class="general">Ajouter des Tâches</button>
-            <button onclick="location.href='/all_tasks'" class="general">Voir toutes les Tâches</button>
-        </div>
-        
-        <!-- Panneau des tâches urgentes -->
-        <div class="container">
-            <h2>Tâches Urgentes</h2>
-            {% for person, tasks in priorities.items() %}
-            <div>
-                <h3>{{ person }}</h3>
-                <ul class="task-list">
-                    {% for task_id, title, end_date in tasks %}
-                    <li class="task-item {% if end_date < today %}overdue{% endif %}">
-                        <span>{{ title }} (Deadline : {{ end_date }})</span>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </div>
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h1>Dashboard</h1>
+
+<div class="action-buttons">
+    <button onclick="location.href='/add_tasks'" class="general">Ajouter des Tâches</button>
+    <button onclick="location.href='/all_tasks'" class="general">Voir toutes les Tâches</button>
+</div>
+
+<div class="container">
+    <h2>Tâches Urgentes</h2>
+    {% for person, tasks in priorities.items() %}
+    <div>
+        <h3>{{ person }}</h3>
+        <ul class="task-list">
+            {% for task_id, title, end_date in tasks %}
+            <li class="task-item {% if end_date < today %}overdue{% endif %}">
+                <span>{{ title }} (Deadline : {{ end_date }})</span>
+            </li>
             {% endfor %}
-        </div>
-        
-        <!-- Panneau du calendrier -->
-        <div class="container">
-            <h2>Calendrier du Mois Prochain</h2>
-            <ul>
-                {% for title, start_date, end_date, assigned_to in next_month_events %}
-                <li>{{ start_date }} - {{ title }} (Attribué à : {{ assigned_to }})</li>
-                {% endfor %}
-            </ul>
-            <button onclick="location.href='/calendar'" class="general">Voir le Calendrier Global</button>
-        </div>
+        </ul>
     </div>
-</body>
-</html>
+    {% endfor %}
+</div>
+
+<div class="container">
+    <h2>Calendrier du Mois Prochain</h2>
+    <ul>
+        {% for title, start_date, end_date, assigned_to in next_month_events %}
+        <li>{{ start_date }} - {{ title }} (Attribué à : {{ assigned_to }})</li>
+        {% endfor %}
+    </ul>
+    <button onclick="location.href='/calendar'" class="general">Voir le Calendrier Global</button>
+</div>
+{% endblock %}
