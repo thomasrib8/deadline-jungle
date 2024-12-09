@@ -1,28 +1,18 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <title>Liste des Tâches</title>
-</head>
-<body>
-    <header>
-        <button onclick="location.href='/dashboard'" class="general">Retour au Dashboard</button>
-    </header>
-    <div class="container">
-        <h1>Liste des Tâches</h1>
-        <ul class="task-list">
-            {% for task in tasks %}
-            <li class="task-item">
-                <span>{{ task[1] }} (Deadline : {{ task[2] }}, Attribué à : {{ task[3] }})</span>
-                <form action="/update_assigned/{{ task[0] }}" method="POST" style="display: inline;">
-                    <input type="text" name="new_assigned_to" placeholder="Attribuer à...">
-                    <button type="submit" class="general">Modifier</button>
-                </form>
-            </li>
-            {% endfor %}
-        </ul>
-    </div>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Liste des Tâches{% endblock %}
+
+{% block content %}
+<h1>Liste des Tâches</h1>
+<ul class="task-list">
+    {% for task in tasks %}
+    <li class="task-item">
+        <span>{{ task[1] }} (Deadline : {{ task[2] }}, Attribué à : {{ task[3] }})</span>
+        <form action="/update_assigned/{{ task[0] }}" method="POST" style="display: inline;">
+            <input type="text" name="new_assigned_to" placeholder="Attribuer à...">
+            <button type="submit" class="general">Modifier</button>
+        </form>
+    </li>
+    {% endfor %}
+</ul>
+{% endblock %}
