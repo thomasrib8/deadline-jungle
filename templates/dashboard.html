@@ -7,24 +7,45 @@
     <title>Dashboard</title>
 </head>
 <body>
+    <header>
+        <button onclick="location.href='/'" class="general">Retour au Dashboard</button>
+    </header>
     <div class="container">
-        <h1>Tableau de bord</h1>
-        <h2>Prochaines Deadlines</h2>
-        <ul class="task-list">
-            {% for task in deadlines %}
-            <li class="task-item">
-                <span>{{ task[1] }} - {{ task[2] }} (Attribué à : {{ task[3] }})</span>
-                <form action="/update_status/{{ task[0] }}" method="POST" style="margin: 0;">
-                    <button type="submit" class="completed">Tâche terminée</button>
-                </form>
-            </li>
+        <h1>Dashboard</h1>
+        
+        <!-- Boutons d'actions -->
+        <div class="action-buttons">
+            <button onclick="location.href='/add_tasks'" class="general">Ajouter des Tâches</button>
+            <button onclick="location.href='/all_tasks'" class="general">Voir toutes les Tâches</button>
+        </div>
+        
+        <!-- Panneau des tâches urgentes -->
+        <div class="container">
+            <h2>Tâches Urgentes</h2>
+            {% for person, tasks in priorities.items() %}
+            <div>
+                <h3>{{ person }}</h3>
+                <ul class="task-list">
+                    {% for task_id, title, end_date in tasks %}
+                    <li class="task-item {% if end_date < today %}overdue{% endif %}">
+                        <span>{{ title }} (Deadline : {{ end_date }})</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
             {% endfor %}
-        </ul>
-        <form action="/upload" method="POST" enctype="multipart/form-data">
-            <input type="file" name="file" required>
-            <br>
-            <button type="submit" class="general">Uploader un fichier CSV</button>
-        </form>
+        </div>
+        
+        <!-- Panneau du calendrier -->
+        <div class="container">
+            <h2>Calendrier du Mois Prochain</h2>
+            <ul>
+                {% for title, start_date, end_date, assigned_to in next_month_events %}
+                <li>{{ start_date }} - {{ title }} (Attribué à : {{ assigned_to }})</li>
+                {% endfor %}
+            </ul>
+            <button onclick="location.href='/calendar'" class="general">Voir le Calendrier Global</button>
+        </div>
     </div>
 </body>
 </html>
