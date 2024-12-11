@@ -14,18 +14,19 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Initialisation de la base de données
 def init_db():
-    conn = sqlite3.connect('tasks.db')
-    cursor = conn.cursor()
-    cursor.execute('''CREATE TABLE IF NOT EXISTS tasks (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        title TEXT NOT NULL,
-                        start_date TEXT NOT NULL,
-                        end_date TEXT NOT NULL,
-                        assigned_to TEXT NOT NULL,
-                        status TEXT DEFAULT 'Pending'
-                    )''')
-    conn.commit()
-    conn.close()
+    if not os.path.exists("tasks.db"):  # Crée la base de données uniquement si elle n'existe pas
+        conn = sqlite3.connect('tasks.db')
+        cursor = conn.cursor()
+        cursor.execute('''CREATE TABLE IF NOT EXISTS tasks (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            title TEXT NOT NULL,
+                            start_date TEXT NOT NULL,
+                            end_date TEXT NOT NULL,
+                            assigned_to TEXT NOT NULL,
+                            status TEXT DEFAULT 'Pending'
+                        )''')
+        conn.commit()
+        conn.close()
 
 @app.route('/')
 def login():
