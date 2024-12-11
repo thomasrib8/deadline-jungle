@@ -3,6 +3,7 @@ import sqlite3
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
+import pandas as pd
 
 # Initialisation de l'application Flask
 app = Flask(__name__)
@@ -27,6 +28,29 @@ def init_db():
                         )''')
         conn.commit()
         conn.close()
+
+# Fonction pour nettoyer et standardiser les fichiers CSV
+def clean_csv(file_path):
+    """
+    Nettoie et standardise le fichier CSV pour s'assurer qu'il correspond au format attendu.
+    - Renomme les colonnes.
+    - Corrige les séparateurs si nécessaire.
+    """
+    try:
+        # Lecture du fichier CSV avec détection automatique du séparateur
+        data = pd.read_csv(file_path, encoding="utf-8", sep=None, engine="python")
+        
+        # Vérification et renommer les colonnes si elles ne sont pas conformes
+        expected_columns = ["Intitulé", "Date Début", "Date Fin", "Attribué à"]
+        if len(data.columns) == 4:
+            data.columns = expected_columns
+        else:
+            raise ValueError("Le fichier CSV doit avoir exactement 4 colonnes.")
+        
+        # Sauvegarde du fichier nettoyé au même emplacement
+        data.to_csv(file_path, index=False, encoding="utf-8")
+    except Exception as e:
+        raise ValueError(f"Erreur lors de la correction du fichier CSV : {str(e)}")
 
 @app.route('/')
 def login():
@@ -98,8 +122,16 @@ def upload():
     filename = secure_filename(file.filename)
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(file_path)
-    import_csv(file_path)
-    return redirect('/dashboard')
+    
+    try:
+        # Nettoie et corrige le fichier CSV si nécessaire
+        clean_csv(file_path)
+        
+        # Importer les données dans la base de données
+        import_csv(file_path)
+        return jsonify({"message": "Fichier CSV uploadé et corrigé avec succès !"}), 200
+    except Exception as e:
+        return jsonify({"error": f"Erreur lors du traitement du fichier : {str(e)}"}), 400
 
 def import_csv(file_path):
     conn = sqlite3.connect('tasks.db')
